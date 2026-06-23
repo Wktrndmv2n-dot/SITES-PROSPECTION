@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prospection Hyères les Palmiers</title>
+    <title>ImmoProspection Hyères les Palmiers</title>
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    
     <style>
         :root {
             --primary: #0056b3;
@@ -22,6 +27,14 @@
         }
         h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 5px; }
         p.subtitle { text-align: center; margin-top: 0; color: #666; font-size: 0.9rem; }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 768px) {
+            .grid-container { grid-template-columns: 1fr 2fr; }
+        }
         .card { 
             background: white; 
             padding: 15px; 
@@ -53,7 +66,12 @@
             margin-top: 10px;
         }
         button:active { transform: scale(0.98); }
-        .search-box { background-color: #fff; }
+        #map {
+            height: 450px;
+            width: 100%;
+            border-radius: 8px;
+            z-index: 1;
+        }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
         th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: var(--primary); color: white; border-radius: 4px; }
@@ -65,8 +83,17 @@
             display: inline-block; 
         }
         .badge-ok { background-color: #d4edda; color: #155724; }
+        .badge-warning { background-color: #fff3cd; color: #856404; }
         .badge-alert { background-color: #f8d7da; color: #721c24; animation: pulse 2s infinite; }
         .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 5px; }
+        .legend {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .legend-item { display: flex; align-items: center; font-size: 0.85rem; font-weight: bold; }
+        .color-line { width: 30px; height: 6px; margin-right: 5px; border-radius: 3px; }
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.6; }
@@ -76,154 +103,207 @@
 </head>
 <body>
 
-    <h1>🌴 ImmoProspection Hyères</h1>
-    <p class="subtitle">Suivi de boîtage & relances à 3 mois</p>
+    <h1>🌴 ImmoProspection Hyères les Palmiers</h1>
+    <p class="subtitle">Suivi de boîtage par tracé des rues</p>
 
-    <!-- FORMULAIRE DE SAISIE -->
-    <div class="card">
-        <h3>📍 Enregistrer un passage</h3>
-        <label>Secteur / Rue :</label>
-        <input type="text" id="rue" placeholder="Ex: Av. Gambetta, Giens, Les Salins...">
-        
-        <label>Date de distribution :</label>
-        <input type="date" id="datePassage">
-        
-        <button onclick="ajouterPassage()">Enregistrer la zone</button>
-    </div>
+    <div class="grid-container">
+        <!-- FORMULAIRE -->
+        <div>
+            <div class="card">
+                <h3>📍 1. Entregistrer une rue</h3>
+                <label>Nom de la Rue :</label>
+                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta, Rue de Limans...">
+                
+                <label>Date de distribution :</label>
+                <input type="date" id="datePassage">
+                
+                <p style="font-size:0.8rem; color:#666; margin-top:10px;">
+                    <i>Note : Cliquez sur l'icône de ligne (en haut à gauche de la carte) puis dessinez en suivant le tracé de la rue.</i>
+                </p>
+            </div>
+            
+            <div class="card">
+                <h3>🔍 Filtrer la liste</h3>
+                <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Rechercher une rue...">
+            </div>
+        </div>
 
-    <!-- RECHERCHE ET FILTRE -->
-    <div class="card search-box">
-        <h3>🔍 Rechercher une zone</h3>
-        <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Filtrer par nom de rue ou quartier...">
+        <!-- INTERFACE CARTE -->
+        <div class="card">
+            <h3>🗺️ 2. Coloration des Rues</h3>
+            <div class="legend">
+                <div class="legend-item"><div class="color-line" style="background:var(--success)"></div> À jour</div>
+                <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Fin de validité (&lt; 15 jours)</div>
+                <div class="legend-item"><div class="color-line" style="background:var(--danger)"></div> À relancer (Délai dépassé)</div>
+            </div>
+            <div id="map"></div>
+        </div>
     </div>
 
     <!-- TABLEAU DE BORD -->
     <div class="card">
-        <h3>📋 Vos Zones (${filtrerPassages().length})</h3>
+        <h3>📋 Historique & Rappels des Rues</h3>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Secteur</th>
-                        <th>Passage</th>
-                        <th>Statut</th>
-                        <th></th>
+                        <th>Rue</th>
+                        <th>Dernier passage</th>
+                        <th>Statut (3 mois)</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="tableauCorps">
-                    <!-- Rempli en JS -->
-                </tbody>
+                <tbody id="tableauCorps"></tbody>
             </table>
         </div>
     </div>
 
-    <script>
-        // Initialisation de la date du jour par défaut
-        document.getElementById('datePassage').valueAsDate = new Date();
+    <!-- SCRIPTS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-        // Récupération des données locales ou tableau vide
+    <script>
+        document.getElementById('datePassage').valueAsDate = new Date();
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
         
-        // Demande l'autorisation pour les notifications au premier chargement
         if (Notification.permission !== "granted" && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
 
-        function ajouterPassage() {
+        // Initialisation de la carte centrée sur Hyères
+        const map = L.map('map').setView([43.1206, 6.1286], 14); 
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        // Barre d'outils de dessin configurée pour le tracé de lignes (rues)
+        const drawControl = new L.Control.Draw({
+            draw: {
+                polyline: {
+                    shapeOptions: {
+                        weight: 7 // Ligne épaisse pour bien voir la rue coloriée
+                    }
+                },
+                polygon: false,
+                rectangle: false,
+                circle: false,
+                circlemarker: false,
+                marker: false
+            },
+            edit: { featureGroup: drawnItems, remove: false }
+        });
+        map.addControl(drawControl);
+
+        function obtenirDonneesStatut(dateSaisie) {
+            const dateP = new Date(dateSaisie);
+            const aujourdhui = new Date();
+            const diffTemps = aujourdhui - dateP;
+            const diffJours = Math.floor(diffTemps / (1000 * 60 * 60 * 24));
+            
+            const seuilEcheance = 90; // 3 mois
+            const seuilAlerte = 75;    // 3 mois - 15 jours
+
+            if (diffJours >= seuilEcheance) {
+                return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE (${diffJours - seuilEcheance}j de retard)` };
+            } else if (diffJours >= seuilAlerte) {
+                return { couleur: '#ffc107', classe: 'badge-warning', texte: `! <15 jours (${seuilEcheance - diffJours}j restants)` };
+            } else {
+                return { couleur: '#28a745', classe: 'badge-ok', texte: `✅ À Jour (J-${seuilEcheance - diffJours})` };
+            }
+        }
+
+        map.on(L.Draw.Event.CREATED, function (e) {
             const rue = document.getElementById('rue').value.trim();
             const date = document.getElementById('datePassage').value;
 
-            if(!rue || !date) { 
-                alert('Veuillez renseigner la rue et la date.'); 
-                return; 
+            if (!rue) {
+                alert("Veuillez d'abord écrire le nom de la rue à gauche avant de la tracer sur la carte.");
+                return;
             }
 
-            // Ajout au tableau
-            listePassages.push({ id: Date.now(), rue: rue, date: date });
-            
-            // Tri par date de passage la plus récente
-            listePassages.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            // Sauvegarde et mise à jour
-            sauvegarder();
-            document.getElementById('rue').value = ''; // Reset champ
-            afficherDonnees();
-        }
+            const layer = e.layer;
+            const geojson = layer.toGeoJSON();
 
-        function supprimerPassage(id) {
-            if(confirm("Supprimer cette zone de l'historique ?")) {
-                listePassages = listePassages.filter(p => p.id !== id);
-                sauvegarder();
-                afficherDonnees();
-            }
-        }
+            const nouveauPassage = {
+                id: Date.now(),
+                rue: rue,
+                date: date,
+                geometry: geojson.geometry
+            };
 
-        function sauvegarder() {
+            listePassages.push(nouveauPassage);
             localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
-        }
-
-        function filtrerPassages() {
-            const recherche = document.getElementById('recherche').value.toLowerCase();
-            return listePassages.filter(p => p.rue.toLowerCase().includes(recherche));
-        }
+            
+            document.getElementById('rue').value = ''; 
+            afficherDonnees();
+        });
 
         function afficherDonnees() {
+            drawnItems.clearLayers();
             const corps = document.getElementById('tableauCorps');
             corps.innerHTML = '';
-            
-            const passagesFiltres = filtrerPassages();
-            const troisMoisEnJours = 90;
-            const aujourdhui = new Date();
 
-            if(passagesFiltres.length === 0) {
-                corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Aucune zone enregistrée</td></tr>`;
+            const recherche = document.getElementById('recherche').value.toLowerCase();
+            const passagesFiltres = listePassages.filter(p => p.rue.toLowerCase().includes(recherche));
+
+            if (passagesFiltres.length === 0) {
+                corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Aucune rue enregistrée</td></tr>`;
                 return;
             }
 
             passagesFiltres.forEach((p) => {
-                const dateP = new Date(p.date);
-                
-                // Calcul de la différence en jours
-                const diffTemps = aujourdhui - dateP;
-                const diffJours = Math.floor(diffTemps / (1000 * 60 * 60 * 24));
-                const joursRestants = troisMoisEnJours - diffJours;
-                
-                let statutBadge = "";
-                
-                if (diffJours >= troisMoisEnJours) {
-                    const retard = diffJours - troisMoisEnJours;
-                    statutBadge = `<span class="badge badge-alert">🚨 Relance (${retard}j de retard)</span>`;
-                    envoyerNotificationHorsLigne(p.rue);
-                } else {
-                    statutBadge = `<span class="badge badge-ok">✅ J-${joursRestants} avant relance</span>`;
-                }
+                const statut = obtenirDonneesStatut(p.date);
+                const dateFormatee = new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 
-                // Formatage de la date en français (JJ/MM/AAAA)
-                const dateAffichee = dateP.toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'});
+                if (p.geometry) {
+                    L.geoJSON(p.geometry, {
+                        style: {
+                            color: statut.couleur,
+                            weight: 7, // Épaisseur de la rue
+                            opacity: 0.8
+                        }
+                    }).bindPopup(`<b>${p.rue}</b><br>Passage : ${dateFormatee}<br><b>${statut.texte}</b>`)
+                      .addTo(drawnItems);
+                }
 
                 const ligne = `<tr>
                     <td><strong>${p.rue}</strong></td>
-                    <td>${dateAffichee}</td>
-                    <td>${statutBadge}</td>
+                    <td>${dateFormatee}</td>
+                    <td><span class="badge ${statut.classe}">${statut.texte}</span></td>
                     <td>
                         <button class="btn-delete" onclick="supprimerPassage(${p.id})">🗑️</button>
                     </td>
                 </tr>`;
                 corps.innerHTML += ligne;
+
+                if (statut.classe === 'badge-alert') {
+                    envoyerNotificationHorsLigne(p.rue);
+                }
             });
+        }
+
+        function supprimerPassage(id) {
+            if (confirm("Supprimer définitivement cette rue ?")) {
+                listePassages = listePassages.filter(p => p.id !== id);
+                localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
+                afficherDonnees();
+            }
         }
 
         function envoyerNotificationHorsLigne(rue) {
             if (Notification.permission === "granted") {
-                // Cette notification s'affiche si l'application est ouverte en arrière-plan
-                new Notification("Immo Hyères : Relance Boîtage", {
-                    body: `Les 3 mois sont écoulés pour : ${rue}. Pensez à y repasser !`,
-                    tag: rue // Évite les doublons de notifications pour une même rue
+                new Notification("Immo Hyères : Relance Rue", {
+                    body: `Le délai de 3 mois est dépassé pour la rue : ${rue}`,
+                    tag: rue
                 });
             }
         }
 
-        // Premier affichage au chargement de la page
         afficherDonnees();
     </script>
 </body>
