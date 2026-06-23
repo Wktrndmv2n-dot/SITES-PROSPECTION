@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prospection Hyères les Palmiers</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            background-color: #eef2f5; 
+            color: var(--dark); 
+        }
+        h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 5px; }
+        p.subtitle { text-align: center; margin-top: 0; color: #666; font-size: 0.9rem; }
+        .card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            margin-bottom: 15px; 
+        }
+        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
+        label { font-weight: bold; font-size: 0.9rem; display: block; margin-top: 10px; }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 6px 0; 
+            border-radius: 8px; 
+            border: 1px solid #ccc; 
+            box-sizing: border-box; 
+            font-size: 1rem;
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: var(--success); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            margin-top: 10px;
+        }
+        button:active { transform: scale(0.98); }
+        .search-box { background-color: #fff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: var(--primary); color: white; border-radius: 4px; }
+        .badge { 
+            padding: 4px 8px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            display: inline-block; 
+        }
+        .badge-ok { background-color: #d4edda; color: #155724; }
+        .badge-alert { background-color: #f8d7da; color: #721c24; animation: pulse 2s infinite; }
+        .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 5px; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌴 ImmoProspection Hyères</h1>
+    <p class="subtitle">Suivi de boîtage & relances à 3 mois</p>
+
+    <!-- FORMULAIRE DE SAISIE -->
+    <div class="card">
+        <h3>📍 Enregistrer un passage</h3>
+        <label>Secteur / Rue :</label>
+        <input type="text" id="rue" placeholder="Ex: Av. Gambetta, Giens, Les Salins...">
+        
+        <label>Date de distribution :</label>
+        <input type="date" id="datePassage">
+        
+        <button onclick="ajouterPassage()">Enregistrer la zone</button>
+    </div>
+
+    <!-- RECHERCHE ET FILTRE -->
+    <div class="card search-box">
+        <h3>🔍 Rechercher une zone</h3>
+        <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Filtrer par nom de rue ou quartier...">
+    </div>
+
+    <!-- TABLEAU DE BORD -->
+    <div class="card">
+        <h3>📋 Vos Zones (${filtrerPassages().length})</h3>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Secteur</th>
+                        <th>Passage</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tableauCorps">
+                    <!-- Rempli en JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Initialisation de la date du jour par défaut
+        document.getElementById('datePassage').valueAsDate = new Date();
+
+        // Récupération des données locales ou tableau vide
+        let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
+        
+        // Demande l'autorisation pour les notifications au premier chargement
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
+        function ajouterPassage() {
+            const rue = document.getElementById('rue').value.trim();
+            const date = document.getElementById('datePassage').value;
+
+            if(!rue || !date) { 
+                alert('Veuillez renseigner la rue et la date.'); 
+                return; 
+            }
+
+            // Ajout au tableau
+            listePassages.push({ id: Date.now(), rue: rue, date: date });
+            
+            // Tri par date de passage la plus récente
+            listePassages.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Sauvegarde et mise à jour
+            sauvegarder();
+            document.getElementById('rue').value = ''; // Reset champ
+            afficherDonnees();
+        }
+
+        function supprimerPassage(id) {
+            if(confirm("Supprimer cette zone de l'historique ?")) {
+                listePassages = listePassages.filter(p => p.id !== id);
+                sauvegarder();
+                afficherDonnees();
+            }
+        }
+
+        function sauvegarder() {
+            localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
+        }
+
+        function filtrerPassages() {
+            const recherche = document.getElementById('recherche').value.toLowerCase();
+            return listePassages.filter(p => p.rue.toLowerCase().includes(recherche));
+        }
+
+        function afficherDonnees() {
+            const corps = document.getElementById('tableauCorps');
+            corps.innerHTML = '';
+            
+            const passagesFiltres = filtrerPassages();
+            const troisMoisEnJours = 90;
+            const aujourdhui = new Date();
+
+            if(passagesFiltres.length === 0) {
+                corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Aucune zone enregistrée</td></tr>`;
+                return;
+            }
+
+            passagesFiltres.forEach((p) => {
+                const dateP = new Date(p.date);
+                
+                // Calcul de la différence en jours
+                const diffTemps = aujourdhui - dateP;
+                const diffJours = Math.floor(diffTemps / (1000 * 60 * 60 * 24));
+                const joursRestants = troisMoisEnJours - diffJours;
+                
+                let statutBadge = "";
+                
+                if (diffJours >= troisMoisEnJours) {
+                    const retard = diffJours - troisMoisEnJours;
+                    statutBadge = `<span class="badge badge-alert">🚨 Relance (${retard}j de retard)</span>`;
+                    envoyerNotificationHorsLigne(p.rue);
+                } else {
+                    statutBadge = `<span class="badge badge-ok">✅ J-${joursRestants} avant relance</span>`;
+                }
+
+                // Formatage de la date en français (JJ/MM/AAAA)
+                const dateAffichee = dateP.toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'});
+
+                const ligne = `<tr>
+                    <td><strong>${p.rue}</strong></td>
+                    <td>${dateAffichee}</td>
+                    <td>${statutBadge}</td>
+                    <td>
+                        <button class="btn-delete" onclick="supprimerPassage(${p.id})">🗑️</button>
+                    </td>
+                </tr>`;
+                corps.innerHTML += ligne;
+            });
+        }
+
+        function envoyerNotificationHorsLigne(rue) {
+            if (Notification.permission === "granted") {
+                // Cette notification s'affiche si l'application est ouverte en arrière-plan
+                new Notification("Immo Hyères : Relance Boîtage", {
+                    body: `Les 3 mois sont écoulés pour : ${rue}. Pensez à y repasser !`,
+                    tag: rue // Évite les doublons de notifications pour une même rue
+                });
+            }
+        }
+
+        // Premier affichage au chargement de la page
+        afficherDonnees();
+    </script>
+</body>
+</html>
