@@ -123,30 +123,24 @@
             <!-- FORMULAIRE RUE -->
             <div id="formRue" class="card">
                 <h3>📍 Enregistrer une rue (Boîtage)</h3>
-                <label>Nom de la Rue :</label>
-                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta...">
+                <label>Nom de la Rue (Optionnel) :</label>
+                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta (ou vide)...">
                 
                 <label>Date de distribution :</label>
                 <input type="date" id="datePassage">
-                <p style="color:#d9534f; font-size:0.85rem; font-weight:bold; margin-top:8px;">
-                    👉 Remplissez le nom PUIS cliquez sur l'icône de LIGNE (tracé) sur la carte.
-                </p>
             </div>
 
             <!-- FORMULAIRE MAISON -->
             <div id="formMaison" class="card" style="display:none;">
                 <h3>🏠 Ajouter une maison en vente</h3>
-                <label>Titre / Adresse :</label>
-                <input type="text" id="maisonTitre" placeholder="Ex: Villa T4 Costebelle...">
+                <label>Titre / Adresse (Optionnel) :</label>
+                <input type="text" id="maisonTitre" placeholder="Ex: Villa T4 (ou vide)...">
                 
                 <label>Notes (Prix, agence, infos...) :</label>
-                <textarea id="maisonNotes" rows="2" placeholder="Ex: 450 000€, exclu, travaux à prévoir..."></textarea>
+                <textarea id="maisonNotes" rows="2" placeholder="Ex: 450 000€..."></textarea>
                 
                 <label>Lien de l'annonce internet :</label>
                 <input type="url" id="maisonLien" placeholder="https://www.leboncoin.fr/...">
-                <p style="color:#6f42c1; font-size:0.85rem; font-weight:bold; margin-top:8px;">
-                    👉 Remplissez les infos PUIS cliquez sur l'icône de MARQUEUR (épingle) sur la carte.
-                </p>
             </div>
             
             <div class="card">
@@ -230,30 +224,29 @@
             const typeTrace = e.layerType;
 
             if (typeTrace === 'polyline') {
-                const rue = document.getElementById('rue').value.trim();
+                let rue = document.getElementById('rue').value.trim();
                 const date = document.getElementById('datePassage').value;
-                if (!rue) { 
-                    alert("⚠️ Erreur : Vous devez écrire le NOM DE LA RUE dans la case à gauche avant de dessiner la ligne !"); 
-                    return; 
-                }
+                
+                // Si vide, on donne un nom automatique
+                if (!rue) { rue = "Rue sans nom (Tracée)"; }
+
                 listePassages.push({ id: Date.now(), type: 'rue', nom: rue, date: date, geometry: e.layer.toGeoJSON().geometry });
                 document.getElementById('rue').value = ''; 
 
             } else if (typeTrace === 'marker') {
-                const titre = document.getElementById('maisonTitre').value.trim();
+                let titre = document.getElementById('maisonTitre').value.trim();
                 const notes = document.getElementById('maisonNotes').value.trim();
                 const lien = document.getElementById('maisonLien').value.trim();
-                if (!titre) { 
-                    alert("⚠️ Erreur : Vous devez écrire le TITRE / ADRESSE de la maison dans la case à gauche avant de poser l'épingle !"); 
-                    return; 
-                }
+                
+                // Si vide, on donne un nom automatique
+                if (!titre) { titre = "Maison repérée"; }
+
                 listePassages.push({ id: Date.now(), type: 'maison', nom: titre, notes: notes, lien: lien, geometry: e.layer.toGeoJSON().geometry });
                 document.getElementById('maisonTitre').value = '';
                 document.getElementById('maisonNotes').value = '';
                 document.getElementById('maisonLien').value = '';
             }
 
-            localStorage.setItem('proseres', JSON.stringify(listePassages));
             localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
             afficherDonnees();
         });
