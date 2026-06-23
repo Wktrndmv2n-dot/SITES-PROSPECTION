@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ImmoProspection Hyères les Palmiers</title>
     
     <!-- Leaflet CSS & JS -->
@@ -54,18 +54,6 @@
             box-sizing: border-box; 
             font-size: 0.95rem;
         }
-        button { 
-            width: 100%; 
-            padding: 12px; 
-            background-color: var(--success); 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            font-size: 1rem; 
-            cursor: pointer; 
-            margin-top: 10px;
-        }
         #map {
             height: 500px;
             width: 100%;
@@ -103,11 +91,14 @@
         }
         .tab-btn {
             flex: 1;
-            padding: 8px;
+            padding: 10px;
             background: #e0e0e0;
             color: #333;
-            font-size: 0.85rem;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: none;
             border-radius: 6px;
+            cursor: pointer;
         }
         .tab-btn.active {
             background: var(--primary);
@@ -123,35 +114,39 @@
     <div class="grid-container">
         <!-- FORMULAIRES -->
         <div>
-            <!-- Onglets pour basculer de mode facilement -->
+            <!-- Onglets -->
             <div class="section-toggle">
                 <button id="tabRue" class="tab-btn active" onclick="changerMode('rue')">🛣️ Mode Rue</button>
-                <button id="tabMaison" class="tab-btn" onclick="changerMode('maison')">🏠 Mode Maison en Vente</button>
+                <button id="tabMaison" class="tab-btn" onclick="changerMode('maison')">🏠 Mode Maison</button>
             </div>
 
             <!-- FORMULAIRE RUE -->
             <div id="formRue" class="card">
-                <h3>📍 1. Enregistrer une rue (Boîtage)</h3>
+                <h3>📍 Enregistrer une rue (Boîtage)</h3>
                 <label>Nom de la Rue :</label>
                 <input type="text" id="rue" placeholder="Ex: Avenue Gambetta...">
                 
                 <label>Date de distribution :</label>
                 <input type="date" id="datePassage">
-                <p style="font-size:0.8rem; color:#666; margin-top:8px;"><i>Action : Écrivez le nom puis utilisez l'outil <b>Ligne</b> sur la carte.</i></p>
+                <p style="color:#d9534f; font-size:0.85rem; font-weight:bold; margin-top:8px;">
+                    👉 Remplissez le nom PUIS cliquez sur l'icône de LIGNE (tracé) sur la carte.
+                </p>
             </div>
 
             <!-- FORMULAIRE MAISON -->
             <div id="formMaison" class="card" style="display:none;">
-                <h3>🏠 1. Ajouter une maison en vente</h3>
+                <h3>🏠 Ajouter une maison en vente</h3>
                 <label>Titre / Adresse :</label>
-                <input type="text" id="maisonTitre" placeholder="Ex: Maison T4 Les Borrels ou 12 Rue d'Italie...">
+                <input type="text" id="maisonTitre" placeholder="Ex: Villa T4 Costebelle...">
                 
-                <label>Notes (Prix, infos, contact...) :</label>
-                <textarea id="maisonNotes" rows="2" placeholder="Ex: 450 000€, mandat simple, garage..."></textarea>
+                <label>Notes (Prix, agence, infos...) :</label>
+                <textarea id="maisonNotes" rows="2" placeholder="Ex: 450 000€, exclu, travaux à prévoir..."></textarea>
                 
                 <label>Lien de l'annonce internet :</label>
-                <input type="url" id="maisonLien" placeholder="https://www.leboncoin.fr/... oû seloger...">
-                <p style="font-size:0.8rem; color:#666; margin-top:8px;"><i>Action : Remplissez les infos puis utilisez l'outil <b>Marqueur (Épingle)</b> sur la carte.</i></p>
+                <input type="url" id="maisonLien" placeholder="https://www.leboncoin.fr/...">
+                <p style="color:#6f42c1; font-size:0.85rem; font-weight:bold; margin-top:8px;">
+                    👉 Remplissez les infos PUIS cliquez sur l'icône de MARQUEUR (épingle) sur la carte.
+                </p>
             </div>
             
             <div class="card">
@@ -162,7 +157,7 @@
 
         <!-- INTERFACE CARTE -->
         <div class="card">
-            <h3>🗺️ 2. Carte Interactive</h3>
+            <h3>🗺️ Carte Interactive</h3>
             <div class="legend">
                 <div class="legend-item"><div class="color-line" style="background:var(--success)"></div> À jour</div>
                 <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Proche relance</div>
@@ -200,17 +195,16 @@
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
         let modeActuel = 'rue';
         
-        const map = L.map('map').setView([43.1206, 6.1286], 14); 
+        const map = L.map('map', { tap: false }).setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        // Configuration de l'outil de dessin pour accepter Lignes (rues) et Marqueurs (maisons)
         const drawControl = new L.Control.Draw({
             draw: {
                 polyline: { shapeOptions: { weight: 7 } },
-                marker: true, // Épingle activée pour les maisons !
+                marker: true,
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
             edit: { featureGroup: drawnItems, remove: false }
@@ -227,19 +221,21 @@
 
         function obtenirDonneesStatut(dateSaisie) {
             const diffJours = Math.floor((new Date() - new Date(dateSaisie)) / (1000 * 60 * 60 * 24));
-            if (diffJours >= 90) return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE (${diffJours - 90}j)` };
+            if (diffJours >= 90) return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE` };
             if (diffJours >= 75) return { couleur: '#ffc107', classe: 'badge-warning', texte: `! <15 jours` };
             return { couleur: '#28a745', classe: 'badge-ok', texte: `✅ À Jour` };
         }
 
         map.on(L.Draw.Event.CREATED, function (e) {
-            const typeTrace = e.layerType; // 'polyline' ou 'marker'
+            const typeTrace = e.layerType;
 
             if (typeTrace === 'polyline') {
                 const rue = document.getElementById('rue').value.trim();
                 const date = document.getElementById('datePassage').value;
-                if (!rue) { alert("Saisissez le nom de la rue à gauche AVANT de tracer la ligne."); return; }
-
+                if (!rue) { 
+                    alert("⚠️ Erreur : Vous devez écrire le NOM DE LA RUE dans la case à gauche avant de dessiner la ligne !"); 
+                    return; 
+                }
                 listePassages.push({ id: Date.now(), type: 'rue', nom: rue, date: date, geometry: e.layer.toGeoJSON().geometry });
                 document.getElementById('rue').value = ''; 
 
@@ -247,14 +243,17 @@
                 const titre = document.getElementById('maisonTitre').value.trim();
                 const notes = document.getElementById('maisonNotes').value.trim();
                 const lien = document.getElementById('maisonLien').value.trim();
-                if (!titre) { alert("Saisissez au moins le titre/adresse à gauche AVANT de poser le point."); return; }
-
+                if (!titre) { 
+                    alert("⚠️ Erreur : Vous devez écrire le TITRE / ADRESSE de la maison dans la case à gauche avant de poser l'épingle !"); 
+                    return; 
+                }
                 listePassages.push({ id: Date.now(), type: 'maison', nom: titre, notes: notes, lien: lien, geometry: e.layer.toGeoJSON().geometry });
                 document.getElementById('maisonTitre').value = '';
                 document.getElementById('maisonNotes').value = '';
                 document.getElementById('maisonLien').value = '';
             }
 
+            localStorage.setItem('proseres', JSON.stringify(listePassages));
             localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
             afficherDonnees();
         });
@@ -268,12 +267,11 @@
             const elementsFiltrés = listePassages.filter(p => p.nom.toLowerCase().includes(recherche));
 
             if (elementsFiltrés.length === 0) {
-                corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Aucun élément trouvé</td></tr>`;
+                corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Aucun élément enregistré</td></tr>`;
                 return;
             }
 
             elementsFiltrés.forEach((p) => {
-                // Compatibilité avec vos anciennes données (qui n'avaient pas de champ .type)
                 const typeElement = p.type || 'rue'; 
 
                 if (typeElement === 'rue') {
@@ -291,17 +289,17 @@
                         <td><button class="btn-delete" onclick="supprimerElement(${p.id})">🗑️</button></td>
                     </tr>`;
                 } else {
-                    // C'est une maison
                     if (p.geometry) {
-                        let popupContenu = `<b>🏠 ${p.nom}</b><br><i>${p.notes || 'Pas de note'}</i>`;
+                        let popupContenu = `<div style="min-width:160px;"><b>🏠 ${p.nom}</b><br><p style="margin:5px 0; font-size:0.9rem; color:#555;">${p.notes || 'Pas de note'}</p>`;
                         if (p.lien) {
-                            popupContenu += `<br><br><a href="${p.lien}" target="_blank" style="background:var(--primary); color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:0.8rem; display:inline-block;">🔗 Voir l'annonce</a>`;
+                            popupContenu += `<a href="${p.lien}" target="_blank" style="background:var(--primary); color:white; padding:5px 10px; border-radius:5px; text-decoration:none; font-size:0.8rem; display:inline-block; margin-top:5px; text-align:center; width:90%;">🔗 Voir l'annonce</a>`;
                         }
+                        popupContenu += `</div>`;
                         
                         L.geoJSON(p.geometry).bindPopup(popupContenu).addTo(drawnItems);
                     }
 
-                    let lienBouton = p.lien ? `<br><a href="${p.lien}" target="_blank" style="color:var(--primary); font-weight:bold;">🔗 Ouvrir l'annonce</a>` : '';
+                    let lienBouton = p.lien ? `<br><a href="${p.lien}" target="_blank" style="color:var(--primary); font-weight:bold; font-size:0.85rem;">🔗 Ouvrir l'annonce</a>` : '';
                     corps.innerHTML += `<tr>
                         <td>🏠 <strong>${p.nom}</strong></td>
                         <td>${p.notes || 'Aucune note'}${lienBouton}</td>
@@ -313,14 +311,13 @@
         }
 
         function supprimerElement(id) {
-            if (confirm("Supprimer cet élément définitivement ?")) {
+            if (confirm("Supprimer cet élément ?")) {
                 listePassages = listePassages.filter(p => p.id !== id);
                 localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
                 afficherDonnees();
             }
         }
 
-        // Forcer l'affichage initial
         afficherDonnees();
     </script>
 </body>
