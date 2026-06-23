@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ImmoProspection Hyères les Palmiers</title>
     
     <!-- Leaflet CSS & JS -->
@@ -83,7 +83,7 @@
         }
         .legend-item { display: flex; align-items: center; font-size: 0.85rem; font-weight: bold; }
         .color-line { width: 30px; height: 6px; margin-right: 5px; border-radius: 3px; }
-        .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: #de2d26; }
+        .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: #6f42c1; }
         .section-toggle {
             display: flex;
             gap: 10px;
@@ -189,30 +189,23 @@
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
         let modeActuel = 'rue';
         
-        // Desactivation du système de "tap" natif de Leaflet qui casse le tracé sur mobile
-        const map = L.map('map', { tap: false }).setView([43.1206, 6.1286], 14); 
+        // Retour strict au comportement initial de la carte
+        const map = L.map('map').setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        // Configuration avec "finish" bouton activé pour forcer la validation sur mobile
+        // Outils de dessin classiques
         const drawControl = new L.Control.Draw({
             draw: {
-                polyline: { 
-                    shapeOptions: { weight: 7 },
-                    touchExtend: true
-                },
+                polyline: { shapeOptions: { weight: 7 } },
                 marker: true,
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
             edit: { featureGroup: drawnItems, remove: false }
         });
         map.addControl(drawControl);
-
-        // Ajustement des textes de l'outil pour afficher "VALIDER LE TRACÉ" en français
-        L.drawLocal.draw.toolbar.buttons.polyline = 'Tracer une rue';
-        L.drawLocal.draw.handlers.polyline.tooltip.end = 'Cliquez sur le bouton "Enregistrer" de la barre d\'outils pour terminer.';
 
         function changerMode(mode) {
             modeActuel = mode;
