@@ -45,17 +45,17 @@
         }
         h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
         label { font-weight: bold; font-size: 0.9rem; display: block; margin-top: 10px; }
-        input, textarea { 
+        input, select, textarea { 
             width: 100%; 
-            padding: 10px; 
-            margin: 4px 0; 
+            padding: 12px; 
+            margin: 6px 0; 
             border-radius: 8px; 
             border: 1px solid #ccc; 
             box-sizing: border-box; 
-            font-size: 0.95rem;
+            font-size: 1rem;
         }
         #map {
-            height: 500px;
+            height: 450px;
             width: 100%;
             border-radius: 8px;
             z-index: 1;
@@ -83,78 +83,48 @@
         }
         .legend-item { display: flex; align-items: center; font-size: 0.85rem; font-weight: bold; }
         .color-line { width: 30px; height: 6px; margin-right: 5px; border-radius: 3px; }
-        .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: #6f42c1; }
-        .section-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: #e0e0e0;
-            color: #333;
-            font-weight: bold;
-            font-size: 0.9rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .tab-btn.active {
-            background: var(--primary);
-            color: white;
-        }
+        .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: var(--purple); }
     </style>
 </head>
 <body>
 
     <h1>🌴 ImmoProspection Hyères les Palmiers</h1>
-    <p class="subtitle">Suivi de boîtage & Maisons à la vente</p>
+    <p class="subtitle">Suivi de boîtage &amp; Maisons à la vente</p>
 
     <div class="grid-container">
-        <!-- FORMULAIRES -->
+        <!-- FORMULAIRE -->
         <div>
-            <!-- Onglets pour basculer facilement -->
-            <div class="section-toggle">
-                <button id="tabRue" class="tab-btn active" onclick="changerMode('rue')">🛣️ Mode Rue</button>
-                <button id="tabMaison" class="tab-btn" onclick="changerMode('maison')">🏠 Mode Maison</button>
-            </div>
-
-            <!-- FORMULAIRE RUE -->
-            <div id="formRue" class="card">
-                <h3>📍 Enregistrer une rue (Boîtage)</h3>
-                <label>Nom de la Rue (Optionnel) :</label>
+            <div class="card">
+                <h3>📍 1. Entregistrer une rue</h3>
+                <label>Nom de la Rue / Secteur :</label>
                 <input type="text" id="rue" placeholder="Ex: Avenue Gambetta...">
                 
                 <label>Date de distribution :</label>
                 <input type="date" id="datePassage">
             </div>
 
-            <!-- FORMULAIRE MAISON -->
-            <div id="formMaison" class="card" style="display:none;">
-                <h3>🏠 Ajouter une maison en vente</h3>
-                <label>Titre / Adresse (Optionnel) :</label>
-                <input type="text" id="maisonTitre" placeholder="Ex: Villa T4...">
+            <!-- ANNOTATION MAISONS -->
+            <div class="card" style="border-left: 4px solid var(--purple);">
+                <h3>🏠 2. Infos Maison à la vente</h3>
+                <label>Notes (Prix, infos, agence...) :</label>
+                <textarea id="maisonNotes" rows="2" placeholder="Ex: T4, 450 000€..."></textarea>
                 
-                <label>Notes (Prix, agence, infos...) :</label>
-                <textarea id="maisonNotes" rows="2" placeholder="Ex: 450 000€..."></textarea>
-                
-                <label>Lien de l'annonce internet :</label>
+                <label>Lien internet de l'annonce :</label>
                 <input type="url" id="maisonLien" placeholder="https://www.leboncoin.fr/...">
             </div>
             
             <div class="card">
                 <h3>🔍 Filtrer la liste</h3>
-                <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Rechercher une rue ou une maison...">
+                <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Rechercher...">
             </div>
         </div>
 
-        <!-- CARTE -->
+        <!-- INTERFACE CARTE -->
         <div class="card">
             <h3>🗺️ Carte Interactive</h3>
             <div class="legend">
                 <div class="legend-item"><div class="color-line" style="background:var(--success)"></div> À jour</div>
-                <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Proche relance</div>
+                <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Fin de validité</div>
                 <div class="legend-item"><div class="color-line" style="background:var(--danger)"></div> À relancer</div>
                 <div class="legend-item"><div class="color-dot"></div> Maison à la vente</div>
             </div>
@@ -164,12 +134,12 @@
 
     <!-- TABLEAU DE BORD -->
     <div class="card">
-        <h3>📋 Liste Globale (Rues & Biens)</h3>
+        <h3>📋 Historique Général</h3>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Élément</th>
+                        <th>Élément (Rue / Bien)</th>
                         <th>Infos / Date</th>
                         <th>Statut</th>
                         <th>Actions</th>
@@ -187,19 +157,19 @@
     <script>
         document.getElementById('datePassage').valueAsDate = new Date();
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
-        let modeActuel = 'rue';
+
+        const map = L.map('map', {
+            tap: false // Désactive la gestion interne des taps Leaflet qui fait bugger le tactile mobile
+        }).setView([43.1206, 6.1286], 14); 
         
-        // CONFIGURATION CARTE INITIALE (SANS BLOCAGE TACTILE)
-        const map = L.map('map').setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        // Les outils d'origine stricts
         const drawControl = new L.Control.Draw({
             draw: {
-                polyline: { shapeOptions: { color: '#28a745', weight: 7 } },
+                polyline: { shapeOptions: { weight: 7 }, text: { finish: 'Terminer' } },
                 marker: true,
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
@@ -207,42 +177,52 @@
         });
         map.addControl(drawControl);
 
-        function changerMode(mode) {
-            modeActuel = mode;
-            document.getElementById('tabRue').classList.toggle('active', mode === 'rue');
-            document.getElementById('tabMaison').classList.toggle('active', mode === 'maison');
-            document.getElementById('formRue').style.display = mode === 'rue' ? 'block' : 'none';
-            document.getElementById('formMaison').style.display = mode === 'maison' ? 'block' : 'none';
+        // ASTUCE MOBILE : Forcer la validation dès qu'on reclique sur le dernier point
+        map.on('draw:drawstart', function (e) {
+            if (e.layerType === 'polyline') {
+                map.on('click', verifierFinTrace);
+            }
+        });
+
+        map.on('draw:drawstop', function () {
+            map.off('click', verifierFinTrace);
+        });
+
+        function verifierFinTrace(e) {
+            // Si l'utilisateur clique très près ou sur le dernier point, on valide de force
+            const drawHandler = drawControl._toolbars.draw._modes.polyline.handler;
+            if (drawHandler && drawHandler._markers && drawHandler._markers.length > 1) {
+                drawHandler.completeShape();
+            }
         }
 
         function obtenirDonneesStatut(dateSaisie) {
             const diffJours = Math.floor((new Date() - new Date(dateSaisie)) / (1000 * 60 * 60 * 24));
             if (diffJours >= 90) return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE` };
             if (diffJours >= 75) return { couleur: '#ffc107', classe: 'badge-warning', texte: `! <15 jours` };
-            return { couleur: '#28a745', colorName: 'green', classe: 'badge-ok', texte: `✅ À Jour` };
+            return { couleur: '#28a745', classe: 'badge-ok', texte: `✅ À Jour` };
         }
 
         map.on(L.Draw.Event.CREATED, function (e) {
             const typeTrace = e.layerType;
+            const layer = e.layer;
+            const geojson = layer.toGeoJSON();
 
             if (typeTrace === 'polyline') {
                 let rue = document.getElementById('rue').value.trim();
                 const date = document.getElementById('datePassage').value;
-                
-                if (!rue) { rue = "Rue sans nom"; }
+                if (!rue) rue = "Rue sans nom";
 
-                listePassages.push({ id: Date.now(), type: 'rue', nom: rue, date: date, geometry: e.layer.toGeoJSON().geometry });
+                listePassages.push({ id: Date.now(), type: 'rue', rue: rue, date: date, geometry: geojson.geometry });
                 document.getElementById('rue').value = ''; 
 
             } else if (typeTrace === 'marker') {
-                let titre = document.getElementById('maisonTitre').value.trim();
+                const rueSaisie = document.getElementById('rue').value.trim();
                 const notes = document.getElementById('maisonNotes').value.trim();
                 const lien = document.getElementById('maisonLien').value.trim();
-                
-                if (!titre) { titre = "Maison repérée"; }
+                const nomMaison = rueSaisie ? "Maison - " + rueSaisie : "Maison repérée";
 
-                listePassages.push({ id: Date.now(), type: 'maison', nom: titre, notes: notes, lien: lien, geometry: e.layer.toGeoJSON().geometry });
-                document.getElementById('maisonTitre').value = '';
+                listePassages.push({ id: Date.now(), type: 'maison', rue: nomMaison, notes: notes, lien: lien, geometry: geojson.geometry });
                 document.getElementById('maisonNotes').value = '';
                 document.getElementById('maisonLien').value = '';
             }
@@ -257,15 +237,15 @@
             corps.innerHTML = '';
 
             const recherche = document.getElementById('recherche').value.toLowerCase();
-            const elementsFiltrés = listePassages.filter(p => p.nom.toLowerCase().includes(recherche));
+            const passagesFiltres = listePassages.filter(p => p.rue.toLowerCase().includes(recherche));
 
-            if (elementsFiltrés.length === 0) {
+            if (passagesFiltres.length === 0) {
                 corps.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Aucun élément enregistré</td></tr>`;
                 return;
             }
 
-            elementsFiltrés.forEach((p) => {
-                const typeElement = p.type || 'rue'; 
+            passagesFiltres.forEach((p) => {
+                const typeElement = p.type || 'rue';
 
                 if (typeElement === 'rue') {
                     const statut = obtenirDonneesStatut(p.date);
@@ -273,38 +253,40 @@
 
                     if (p.geometry) {
                         L.geoJSON(p.geometry, { style: { color: statut.couleur, weight: 7, opacity: 0.8 } })
-                         .bindPopup(`<b>🛣️ ${p.nom}</b><br>Passage : ${dateFormatee}<br><b>${statut.texte}</b>`).addTo(drawnItems);
+                         .bindPopup(`<b>🛣️ ${p.rue}</b><br>Passage : ${dateFormatee}<br><b>${statut.texte}</b>`).addTo(drawnItems);
                     }
+
                     corps.innerHTML += `<tr>
-                        <td>🛣️ <strong>${p.nom}</strong></td>
-                        <td>Passage : ${dateFormatee}</td>
+                        <td><strong>🛣️ ${p.rue}</strong></td>
+                        <td>${dateFormatee}</td>
                         <td><span class="badge ${statut.classe}">${statut.texte}</span></td>
-                        <td><button class="btn-delete" onclick="supprimerElement(${p.id})">🗑️</button></td>
+                        <td><button class="btn-delete" onclick="supprimerPassage(${p.id})">🗑️</button></td>
                     </tr>`;
-                } else {
+                } 
+                else if (typeElement === 'maison') {
                     if (p.geometry) {
-                        let popupContenu = `<div style="min-width:160px;"><b>🏠 ${p.nom}</b><br><p style="margin:5px 0; font-size:0.9rem; color:#555;">${p.notes || 'Pas de note'}</p>`;
+                        let popupContenu = `<div style="min-width:160px;"><b>🏠 ${p.rue}</b><br><p style="margin:5px 0; font-size:0.9rem; color:#555;">${p.notes || 'Pas de note'}</p>`;
                         if (p.lien) {
                             popupContenu += `<a href="${p.lien}" target="_blank" style="background:var(--primary); color:white; padding:5px 10px; border-radius:5px; text-decoration:none; font-size:0.8rem; display:inline-block; margin-top:5px; text-align:center; width:90%;">🔗 Voir l'annonce</a>`;
                         }
                         popupContenu += `</div>`;
-                        
+
                         L.geoJSON(p.geometry).bindPopup(popupContenu).addTo(drawnItems);
                     }
 
                     let lienBouton = p.lien ? `<br><a href="${p.lien}" target="_blank" style="color:var(--primary); font-weight:bold; font-size:0.85rem;">🔗 Ouvrir l'annonce</a>` : '';
                     corps.innerHTML += `<tr>
-                        <td>🏠 <strong>${p.nom}</strong></td>
+                        <td><strong>🏠 ${p.rue}</strong></td>
                         <td>${p.notes || 'Aucune note'}${lienBouton}</td>
                         <td><span class="badge badge-purple">À LA VENTE</span></td>
-                        <td><button class="btn-delete" onclick="supprimerElement(${p.id})">🗑️</button></td>
+                        <td><button class="btn-delete" onclick="supprimerPassage(${p.id})">🗑️</button></td>
                     </tr>`;
                 }
             });
         }
 
-        function supprimerElement(id) {
-            if (confirm("Supprimer cet élément ?")) {
+        function supprimerPassage(id) {
+            if (confirm("Supprimer définitivement cet élément ?")) {
                 listePassages = listePassages.filter(p => p.id !== id);
                 localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
                 afficherDonnees();
