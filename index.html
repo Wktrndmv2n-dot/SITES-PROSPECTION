@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ImmoProspection Hyères les Palmiers</title>
     
-    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
     
@@ -22,61 +21,57 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0; 
-            padding: 20px; 
+            padding: 15px; 
             background-color: #eef2f5; 
             color: var(--dark); 
         }
-        h1 { text-align: center; color: var(--primary); font-size: 1.8rem; margin-bottom: 5px; }
-        p.subtitle { text-align: center; margin-top: 0; color: #666; font-size: 1rem; }
+        h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 5px; }
+        p.subtitle { text-align: center; margin-top: 0; color: #666; font-size: 0.9rem; }
         .grid-container {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 768px) {
+            .grid-container { grid-template-columns: 1fr 2fr; }
         }
         .card { 
             background: white; 
-            padding: 20px; 
+            padding: 15px; 
             border-radius: 12px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
             margin-bottom: 15px; 
         }
-        h3 { margin-top: 0; color: var(--primary); font-size: 1.2rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
+        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
         label { font-weight: bold; font-size: 0.9rem; display: block; margin-top: 10px; }
         input, select, textarea { 
             width: 100%; 
-            padding: 10px; 
+            padding: 12px; 
             margin: 6px 0; 
             border-radius: 8px; 
             border: 1px solid #ccc; 
             box-sizing: border-box; 
             font-size: 1rem;
         }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: var(--success); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            margin-top: 10px;
+        }
+        button:active { transform: scale(0.98); }
         #map {
-            height: 500px;
+            height: 450px;
             width: 100%;
             border-radius: 8px;
             z-index: 1;
         }
-        
-        .btn-valider-action {
-            display: block;
-            width: 100%;
-            background-color: var(--success);
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            padding: 12px;
-            margin-top: 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
-            text-align: center;
-        }
-        .btn-valider-action:hover {
-            background-color: #218838;
-        }
-
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
         th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: var(--primary); color: white; border-radius: 4px; }
@@ -89,37 +84,41 @@
         }
         .badge-ok { background-color: #d4edda; color: #155724; }
         .badge-warning { background-color: #fff3cd; color: #856404; }
-        .badge-alert { background-color: #f8d7da; color: #721c24; }
+        .badge-alert { background-color: #f8d7da; color: #721c24; animation: pulse 2s infinite; }
         .badge-purple { background-color: #e2d9f3; color: var(--purple); }
         .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 5px; }
         .legend {
             display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
         }
-        .legend-item { display: flex; align-items: center; font-size: 0.9rem; font-weight: bold; }
+        .legend-item { display: flex; align-items: center; font-size: 0.85rem; font-weight: bold; }
         .color-line { width: 30px; height: 6px; margin-right: 5px; border-radius: 3px; }
         .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: var(--purple); }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
     <h1>🌴 ImmoProspection Hyères les Palmiers</h1>
-    <p class="subtitle">Suivi de boîtage &amp; Maisons à la vente (Version Ordinateur)</p>
+    <p class="subtitle">Suivi de boîtage cartographique</p>
 
     <div class="grid-container">
-        <!-- FORMULAIRE -->
         <div>
             <div class="card">
-                <h3>📍 1. Entregistrer une rue</h3>
+                <h3>📍 1. Enregistrer une rue</h3>
                 <label>Nom de la Rue / Secteur :</label>
-                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta...">
+                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta, Rue de Limans...">
                 
                 <label>Date de distribution :</label>
                 <input type="date" id="datePassage">
             </div>
 
-            <!-- ANNOTATION MAISONS -->
             <div class="card" style="border-left: 4px solid var(--purple);">
                 <h3>🏠 2. Infos Maison à la vente</h3>
                 <label>Notes (Prix, infos, agence...) :</label>
@@ -131,39 +130,31 @@
             
             <div class="card">
                 <h3>🔍 Filtrer la liste</h3>
-                <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Rechercher...">
+                <input type="text" id="recherche" oninput="afficherDonnees()" placeholder="Rechercher une rue ou une maison...">
             </div>
         </div>
 
-        <!-- INTERFACE CARTE -->
         <div class="card">
-            <h3>🗺️ Carte Interactive</h3>
-            <p style="font-size:0.85rem; margin:0 0 10px 0; color:#555;">
-                ⌨️ <b>Raccourcis :</b> Pour finir une ligne, vous pouvez faire un <b>double-clic</b>, appuyer sur la touche <b>Entrée</b>, ou cliquer sur le bouton vert.
-            </p>
+            <h3>🗺️ 2. Zone de Prospection Interactive</h3>
             <div class="legend">
                 <div class="legend-item"><div class="color-line" style="background:var(--success)"></div> À jour</div>
-                <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Fin de validité</div>
-                <div class="legend-item"><div class="color-line" style="background:var(--danger)"></div> À relancer</div>
+                <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Fin de validité (&lt; 15 jours)</div>
+                <div class="legend-item"><div class="color-line" style="background:var(--danger)"></div> Échéance dépassée (Relancer)</div>
                 <div class="legend-item"><div class="color-dot"></div> Maison à la vente</div>
             </div>
-            
             <div id="map"></div>
-            
-            <button class="btn-valider-action" onclick="forcerValidation()">✅ VALIDER LE TRACÉ ACTUEL (OU TOUCHE ENTRÉE)</button>
         </div>
     </div>
 
-    <!-- TABLEAU DE BORD -->
     <div class="card">
-        <h3>📋 Historique Général</h3>
+        <h3>📋 Historique &amp; Rappels</h3>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Élément (Rue / Bien)</th>
-                        <th>Infos / Date</th>
-                        <th>Statut</th>
+                        <th>Nom / Rue</th>
+                        <th>Dernier passage / Infos</th>
+                        <th>Statut (3 mois)</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -172,17 +163,24 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
     <script>
         document.getElementById('datePassage').valueAsDate = new Date();
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
+        
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
 
-        // Rétablissement de la configuration classique ordi (sans le blocage de tap)
+        // --- CODE D'ORIGINE DE LA CARTE ---
         const map = L.map('map').setView([43.1206, 6.1286], 14); 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
@@ -190,42 +188,29 @@
         const drawControl = new L.Control.Draw({
             draw: {
                 polyline: { shapeOptions: { weight: 7 } },
-                marker: true,
+                marker: true, // Seul ajout : l'outil marqueur activé
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
             edit: { featureGroup: drawnItems, remove: false }
         });
         map.addControl(drawControl);
 
-        // --- VALIDATION PAR TOUCHE ENTRÉE ---
-        window.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                // Si on tape dans un champ de texte, on ne coupe pas la saisie
-                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-                    return; 
-                }
-                e.preventDefault();
-                forcerValidation();
-            }
-        });
-
-        // --- ENREGISTREMENT FORCÉ ---
-        function forcerValidation() {
-            const polyHandler = drawControl._toolbars.draw._modes.polyline.handler;
-            if (polyHandler && polyHandler._enabled) {
-                if (polyHandler._markers.length > 0) {
-                    polyHandler.completeShape();
-                } else {
-                    alert("Tracez d'abord des points sur la carte.");
-                }
-            }
-        }
-
         function obtenirDonneesStatut(dateSaisie) {
-            const diffJours = Math.floor((new Date() - new Date(dateSaisie)) / (1000 * 60 * 60 * 24));
-            if (diffJours >= 90) return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE` };
-            if (diffJours >= 75) return { couleur: '#ffc107', classe: 'badge-warning', texte: `! <15 jours` };
-            return { couleur: '#28a745', classe: 'badge-ok', texte: `✅ À Jour` };
+            const dateP = new Date(dateSaisie);
+            const aujourdhui = new Date();
+            const diffTemps = aujourdhui - dateP;
+            const diffJours = Math.floor(diffTemps / (1000 * 60 * 60 * 24));
+            
+            const seuilEcheance = 90; 
+            const seuilAlerte = 75;    
+
+            if (diffJours >= seuilEcheance) {
+                return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE (${diffJours - seuilEcheance}j de retard)` };
+            } else if (diffJours >= seuilAlerte) {
+                return { couleur: '#ffc107', classe: 'badge-warning', texte: `! <15 jours (${seuilEcheance - diffJours}j restants)` };
+            } else {
+                return { couleur: '#28a745', classe: 'badge-ok', texte: `✅ À Jour (J-${seuilEcheance - diffJours})` };
+            }
         }
 
         map.on(L.Draw.Event.CREATED, function (e) {
@@ -236,18 +221,34 @@
             if (typeTrace === 'polyline') {
                 let rue = document.getElementById('rue').value.trim();
                 const date = document.getElementById('datePassage').value;
-                if (!rue) rue = "Rue sans nom";
 
-                listePassages.push({ id: Date.now(), type: 'rue', rue: rue, date: date, geometry: geojson.geometry });
+                if (!rue) { rue = "Rue sans nom"; }
+
+                listePassages.push({
+                    id: Date.now(),
+                    type: 'rue',
+                    rue: rue,
+                    date: date,
+                    geometry: geojson.geometry
+                });
                 document.getElementById('rue').value = ''; 
 
             } else if (typeTrace === 'marker') {
                 const rueSaisie = document.getElementById('rue').value.trim();
                 const notes = document.getElementById('maisonNotes').value.trim();
                 const lien = document.getElementById('maisonLien').value.trim();
+
                 const nomMaison = rueSaisie ? "Maison - " + rueSaisie : "Maison repérée";
 
-                listePassages.push({ id: Date.now(), type: 'maison', rue: nomMaison, notes: notes, lien: lien, geometry: geojson.geometry });
+                listePassages.push({
+                    id: Date.now(),
+                    type: 'maison',
+                    rue: nomMaison,
+                    notes: notes,
+                    lien: lien,
+                    geometry: geojson.geometry
+                });
+
                 document.getElementById('maisonNotes').value = '';
                 document.getElementById('maisonLien').value = '';
             }
@@ -270,15 +271,17 @@
             }
 
             passagesFiltres.forEach((p) => {
-                const typeElement = p.type || 'rue';
+                const typeElement = p.type || 'rue'; 
 
                 if (typeElement === 'rue') {
                     const statut = obtenirDonneesStatut(p.date);
-                    const dateFormatee = new Date(p.date).toLocaleDateString('fr-FR');
+                    const dateFormatee = new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 
                     if (p.geometry) {
-                        L.geoJSON(p.geometry, { style: { color: statut.couleur, weight: 7, opacity: 0.8 } })
-                         .bindPopup(`<b>🛣️ ${p.rue}</b><br>Passage : ${dateFormatee}<br><b>${statut.texte}</b>`).addTo(drawnItems);
+                        L.geoJSON(p.geometry, {
+                            style: { color: statut.couleur, weight: 7, opacity: 0.8 }
+                        }).bindPopup(`<b>🛣️ ${p.rue}</b><br>Passage : ${dateFormatee}<br><b>${statut.texte}</b>`)
+                          .addTo(drawnItems);
                     }
 
                     corps.innerHTML += `<tr>
@@ -287,6 +290,10 @@
                         <td><span class="badge ${statut.classe}">${statut.texte}</span></td>
                         <td><button class="btn-delete" onclick="supprimerPassage(${p.id})">🗑️</button></td>
                     </tr>`;
+
+                    if (statut.classe === 'badge-alert') {
+                        envoyerNotificationHorsLigne(p.rue);
+                    }
                 } 
                 else if (typeElement === 'maison') {
                     if (p.geometry) {
@@ -315,6 +322,15 @@
                 listePassages = listePassages.filter(p => p.id !== id);
                 localStorage.setItem('prospectionHyeres', JSON.stringify(listePassages));
                 afficherDonnees();
+            }
+        }
+
+        function envoyerNotificationHorsLigne(rue) {
+            if (Notification.permission === "granted") {
+                new Notification("Immo Hyères : Relance Rue", {
+                    body: `Le délai de 3 mois est dépassé pour la rue : ${rue}`,
+                    tag: rue
+                });
             }
         }
 
