@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ImmoProspection Hyères les Palmiers</title>
     
     <!-- Leaflet CSS & JS -->
@@ -114,7 +114,7 @@
     <div class="grid-container">
         <!-- FORMULAIRES -->
         <div>
-            <!-- Onglets -->
+            <!-- Onglets pour basculer facilement -->
             <div class="section-toggle">
                 <button id="tabRue" class="tab-btn active" onclick="changerMode('rue')">🛣️ Mode Rue</button>
                 <button id="tabMaison" class="tab-btn" onclick="changerMode('maison')">🏠 Mode Maison</button>
@@ -149,7 +149,7 @@
             </div>
         </div>
 
-        <!-- INTERFACE CARTE -->
+        <!-- CARTE -->
         <div class="card">
             <h3>🗺️ Carte Interactive</h3>
             <div class="legend">
@@ -189,17 +189,17 @@
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
         let modeActuel = 'rue';
         
-        // Retour strict au comportement initial de la carte
+        // CONFIGURATION CARTE INITIALE (SANS BLOCAGE TACTILE)
         const map = L.map('map').setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        // Outils de dessin classiques
+        // Les outils d'origine stricts
         const drawControl = new L.Control.Draw({
             draw: {
-                polyline: { shapeOptions: { weight: 7 } },
+                polyline: { shapeOptions: { color: '#28a745', weight: 7 } },
                 marker: true,
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
@@ -219,7 +219,7 @@
             const diffJours = Math.floor((new Date() - new Date(dateSaisie)) / (1000 * 60 * 60 * 24));
             if (diffJours >= 90) return { couleur: '#dc3545', classe: 'badge-alert', texte: `🚨 RELANCE` };
             if (diffJours >= 75) return { couleur: '#ffc107', classe: 'badge-warning', texte: `! <15 jours` };
-            return { couleur: '#28a745', classe: 'badge-ok', texte: `✅ À Jour` };
+            return { couleur: '#28a745', colorName: 'green', classe: 'badge-ok', texte: `✅ À Jour` };
         }
 
         map.on(L.Draw.Event.CREATED, function (e) {
@@ -229,7 +229,7 @@
                 let rue = document.getElementById('rue').value.trim();
                 const date = document.getElementById('datePassage').value;
                 
-                if (!rue) { rue = "Rue sans nom (Tracée)"; }
+                if (!rue) { rue = "Rue sans nom"; }
 
                 listePassages.push({ id: Date.now(), type: 'rue', nom: rue, date: date, geometry: e.layer.toGeoJSON().geometry });
                 document.getElementById('rue').value = ''; 
