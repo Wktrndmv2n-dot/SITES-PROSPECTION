@@ -2,9 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ImmoProspection Hyères les Palmiers</title>
     
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
     
@@ -21,32 +22,29 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0; 
-            padding: 15px; 
+            padding: 20px; 
             background-color: #eef2f5; 
             color: var(--dark); 
         }
-        h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 5px; }
-        p.subtitle { text-align: center; margin-top: 0; color: #666; font-size: 0.9rem; }
+        h1 { text-align: center; color: var(--primary); font-size: 1.8rem; margin-bottom: 5px; }
+        p.subtitle { text-align: center; margin-top: 0; color: #666; font-size: 1rem; }
         .grid-container {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-        @media (min-width: 768px) {
-            .grid-container { grid-template-columns: 1fr 2fr; }
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
         }
         .card { 
             background: white; 
-            padding: 15px; 
+            padding: 20px; 
             border-radius: 12px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
             margin-bottom: 15px; 
         }
-        h3 { margin-top: 0; color: var(--primary); font-size: 1.1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
+        h3 { margin-top: 0; color: var(--primary); font-size: 1.2rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
         label { font-weight: bold; font-size: 0.9rem; display: block; margin-top: 10px; }
         input, select, textarea { 
             width: 100%; 
-            padding: 12px; 
+            padding: 10px; 
             margin: 6px 0; 
             border-radius: 8px; 
             border: 1px solid #ccc; 
@@ -54,11 +52,31 @@
             font-size: 1rem;
         }
         #map {
-            height: 450px;
+            height: 500px;
             width: 100%;
             border-radius: 8px;
             z-index: 1;
         }
+        
+        .btn-valider-action {
+            display: block;
+            width: 100%;
+            background-color: var(--success);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
+            text-align: center;
+        }
+        .btn-valider-action:hover {
+            background-color: #218838;
+        }
+
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
         th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: var(--primary); color: white; border-radius: 4px; }
@@ -71,31 +89,26 @@
         }
         .badge-ok { background-color: #d4edda; color: #155724; }
         .badge-warning { background-color: #fff3cd; color: #856404; }
-        .badge-alert { background-color: #f8d7da; color: #721c24; animation: pulse 2s infinite; }
+        .badge-alert { background-color: #f8d7da; color: #721c24; }
         .badge-purple { background-color: #e2d9f3; color: var(--purple); }
         .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 5px; }
         .legend {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
         }
-        .legend-item { display: flex; align-items: center; font-size: 0.85rem; font-weight: bold; }
+        .legend-item { display: flex; align-items: center; font-size: 0.9rem; font-weight: bold; }
         .color-line { width: 30px; height: 6px; margin-right: 5px; border-radius: 3px; }
         .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: var(--purple); }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
     </style>
 </head>
 <body>
 
     <h1>🌴 ImmoProspection Hyères les Palmiers</h1>
-    <p class="subtitle">Suivi de boîtage &amp; Maisons à la vente</p>
+    <p class="subtitle">Suivi de boîtage &amp; Maisons à la vente (Version Ordinateur)</p>
 
     <div class="grid-container">
+        <!-- FORMULAIRE -->
         <div>
             <div class="card">
                 <h3>📍 1. Entregistrer une rue</h3>
@@ -106,6 +119,7 @@
                 <input type="date" id="datePassage">
             </div>
 
+            <!-- ANNOTATION MAISONS -->
             <div class="card" style="border-left: 4px solid var(--purple);">
                 <h3>🏠 2. Infos Maison à la vente</h3>
                 <label>Notes (Prix, infos, agence...) :</label>
@@ -121,10 +135,11 @@
             </div>
         </div>
 
+        <!-- INTERFACE CARTE -->
         <div class="card">
             <h3>🗺️ Carte Interactive</h3>
-            <p style="font-size:0.8rem; margin:0 0 10px 0; color:#555;">
-                💡 <b>Astuce :</b> Une fois le tracé ou le point posé, appuyez sur la touche <b>Entrée</b> (ou "Accéder") de votre clavier pour valider !
+            <p style="font-size:0.85rem; margin:0 0 10px 0; color:#555;">
+                ⌨️ <b>Raccourcis :</b> Pour finir une ligne, vous pouvez faire un <b>double-clic</b>, appuyer sur la touche <b>Entrée</b>, ou cliquer sur le bouton vert.
             </p>
             <div class="legend">
                 <div class="legend-item"><div class="color-line" style="background:var(--success)"></div> À jour</div>
@@ -132,10 +147,14 @@
                 <div class="legend-item"><div class="color-line" style="background:var(--danger)"></div> À relancer</div>
                 <div class="legend-item"><div class="color-dot"></div> Maison à la vente</div>
             </div>
+            
             <div id="map"></div>
+            
+            <button class="btn-valider-action" onclick="forcerValidation()">✅ VALIDER LE TRACÉ ACTUEL (OU TOUCHE ENTRÉE)</button>
         </div>
     </div>
 
+    <!-- TABLEAU DE BORD -->
     <div class="card">
         <h3>📋 Historique Général</h3>
         <div style="overflow-x:auto;">
@@ -153,6 +172,7 @@
         </div>
     </div>
 
+    <!-- SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
@@ -160,7 +180,8 @@
         document.getElementById('datePassage').valueAsDate = new Date();
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
 
-        const map = L.map('map', { tap: false }).setView([43.1206, 6.1286], 14); 
+        // Rétablissement de la configuration classique ordi (sans le blocage de tap)
+        const map = L.map('map').setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
@@ -176,31 +197,29 @@
         });
         map.addControl(drawControl);
 
-        // --- INTERCEPTIONS DE LA TOUCHE ENTRÉE ---
+        // --- VALIDATION PAR TOUCHE ENTRÉE ---
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
-                // Évite de recharger la page par défaut
-                e.preventDefault(); 
-                
-                // 1. Force la validation si une ligne est en cours de tracé
-                const polyHandler = drawControl._toolbars.draw._modes.polyline.handler;
-                if (polyHandler && polyHandler._enabled && polyHandler._markers.length > 0) {
-                    polyHandler.completeShape();
+                // Si on tape dans un champ de texte, on ne coupe pas la saisie
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                    return; 
                 }
-                
-                // 2. Force la validation si un marqueur (épingle) attend d'être posé
-                const markerHandler = drawControl._toolbars.draw._modes.marker.handler;
-                if (markerHandler && markerHandler._enabled && markerHandler._marker) {
-                    // Simule le clic au centre de la carte si l'utilisateur n'a pas touché l'écran
-                    const centre = map.getCenter();
-                    map.fire('draw:created', {
-                        layer: L.marker(centre),
-                        layerType: 'marker'
-                    });
-                    markerHandler.disable();
-                }
+                e.preventDefault();
+                forcerValidation();
             }
         });
+
+        // --- ENREGISTREMENT FORCÉ ---
+        function forcerValidation() {
+            const polyHandler = drawControl._toolbars.draw._modes.polyline.handler;
+            if (polyHandler && polyHandler._enabled) {
+                if (polyHandler._markers.length > 0) {
+                    polyHandler.completeShape();
+                } else {
+                    alert("Tracez d'abord des points sur la carte.");
+                }
+            }
+        }
 
         function obtenirDonneesStatut(dateSaisie) {
             const diffJours = Math.floor((new Date() - new Date(dateSaisie)) / (1000 * 60 * 60 * 24));
