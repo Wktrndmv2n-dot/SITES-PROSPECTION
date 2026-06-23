@@ -124,7 +124,7 @@
             <div id="formRue" class="card">
                 <h3>📍 Enregistrer une rue (Boîtage)</h3>
                 <label>Nom de la Rue (Optionnel) :</label>
-                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta (ou vide)...">
+                <input type="text" id="rue" placeholder="Ex: Avenue Gambetta...">
                 
                 <label>Date de distribution :</label>
                 <input type="date" id="datePassage">
@@ -134,7 +134,7 @@
             <div id="formMaison" class="card" style="display:none;">
                 <h3>🏠 Ajouter une maison en vente</h3>
                 <label>Titre / Adresse (Optionnel) :</label>
-                <input type="text" id="maisonTitre" placeholder="Ex: Villa T4 (ou vide)...">
+                <input type="text" id="maisonTitre" placeholder="Ex: Villa T4...">
                 
                 <label>Notes (Prix, agence, infos...) :</label>
                 <textarea id="maisonNotes" rows="2" placeholder="Ex: 450 000€..."></textarea>
@@ -189,21 +189,30 @@
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
         let modeActuel = 'rue';
         
+        // Desactivation du système de "tap" natif de Leaflet qui casse le tracé sur mobile
         const map = L.map('map', { tap: false }).setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
+        // Configuration avec "finish" bouton activé pour forcer la validation sur mobile
         const drawControl = new L.Control.Draw({
             draw: {
-                polyline: { shapeOptions: { weight: 7 } },
+                polyline: { 
+                    shapeOptions: { weight: 7 },
+                    touchExtend: true
+                },
                 marker: true,
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
             edit: { featureGroup: drawnItems, remove: false }
         });
         map.addControl(drawControl);
+
+        // Ajustement des textes de l'outil pour afficher "VALIDER LE TRACÉ" en français
+        L.drawLocal.draw.toolbar.buttons.polyline = 'Tracer une rue';
+        L.drawLocal.draw.handlers.polyline.tooltip.end = 'Cliquez sur le bouton "Enregistrer" de la barre d\'outils pour terminer.';
 
         function changerMode(mode) {
             modeActuel = mode;
@@ -227,7 +236,6 @@
                 let rue = document.getElementById('rue').value.trim();
                 const date = document.getElementById('datePassage').value;
                 
-                // Si vide, on donne un nom automatique
                 if (!rue) { rue = "Rue sans nom (Tracée)"; }
 
                 listePassages.push({ id: Date.now(), type: 'rue', nom: rue, date: date, geometry: e.layer.toGeoJSON().geometry });
@@ -238,7 +246,6 @@
                 const notes = document.getElementById('maisonNotes').value.trim();
                 const lien = document.getElementById('maisonLien').value.trim();
                 
-                // Si vide, on donne un nom automatique
                 if (!titre) { titre = "Maison repérée"; }
 
                 listePassages.push({ id: Date.now(), type: 'maison', nom: titre, notes: notes, lien: lien, geometry: e.layer.toGeoJSON().geometry });
