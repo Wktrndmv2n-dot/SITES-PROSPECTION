@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ImmoProspection Hyères les Palmiers</title>
     
-    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
     
@@ -72,7 +71,7 @@
         }
         .badge-ok { background-color: #d4edda; color: #155724; }
         .badge-warning { background-color: #fff3cd; color: #856404; }
-        .badge-alert { background-color: #f8d7da; color: #721c24; }
+        .badge-alert { background-color: #f8d7da; color: #721c24; animation: pulse 2s infinite; }
         .badge-purple { background-color: #e2d9f3; color: var(--purple); }
         .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 5px; }
         .legend {
@@ -84,6 +83,11 @@
         .legend-item { display: flex; align-items: center; font-size: 0.85rem; font-weight: bold; }
         .color-line { width: 30px; height: 6px; margin-right: 5px; border-radius: 3px; }
         .color-dot { width: 12px; height: 12px; margin-right: 5px; border-radius: 50%; background-color: var(--purple); }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -92,7 +96,6 @@
     <p class="subtitle">Suivi de boîtage &amp; Maisons à la vente</p>
 
     <div class="grid-container">
-        <!-- FORMULAIRE -->
         <div>
             <div class="card">
                 <h3>📍 1. Entregistrer une rue</h3>
@@ -103,7 +106,6 @@
                 <input type="date" id="datePassage">
             </div>
 
-            <!-- ANNOTATION MAISONS -->
             <div class="card" style="border-left: 4px solid var(--purple);">
                 <h3>🏠 2. Infos Maison à la vente</h3>
                 <label>Notes (Prix, infos, agence...) :</label>
@@ -119,9 +121,11 @@
             </div>
         </div>
 
-        <!-- INTERFACE CARTE -->
         <div class="card">
             <h3>🗺️ Carte Interactive</h3>
+            <p style="font-size:0.8rem; margin:0 0 10px 0; color:#555;">
+                💡 <b>Astuce :</b> Une fois le tracé ou le point posé, appuyez sur la touche <b>Entrée</b> (ou "Accéder") de votre clavier pour valider !
+            </p>
             <div class="legend">
                 <div class="legend-item"><div class="color-line" style="background:var(--success)"></div> À jour</div>
                 <div class="legend-item"><div class="color-line" style="background:var(--warning)"></div> Fin de validité</div>
@@ -132,7 +136,6 @@
         </div>
     </div>
 
-    <!-- TABLEAU DE BORD -->
     <div class="card">
         <h3>📋 Historique Général</h3>
         <div style="overflow-x:auto;">
@@ -150,7 +153,6 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
@@ -158,10 +160,7 @@
         document.getElementById('datePassage').valueAsDate = new Date();
         let listePassages = JSON.parse(localStorage.getItem('prospectionHyeres')) || [];
 
-        const map = L.map('map', {
-            tap: false // Désactive la gestion interne des taps Leaflet qui fait bugger le tactile mobile
-        }).setView([43.1206, 6.1286], 14); 
-        
+        const map = L.map('map', { tap: false }).setView([43.1206, 6.1286], 14); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         const drawnItems = new L.FeatureGroup();
@@ -169,7 +168,7 @@
 
         const drawControl = new L.Control.Draw({
             draw: {
-                polyline: { shapeOptions: { weight: 7 }, text: { finish: 'Terminer' } },
+                polyline: { shapeOptions: { weight: 7 } },
                 marker: true,
                 polygon: false, rectangle: false, circle: false, circlemarker: false
             },
@@ -177,24 +176,31 @@
         });
         map.addControl(drawControl);
 
-        // ASTUCE MOBILE : Forcer la validation dès qu'on reclique sur le dernier point
-        map.on('draw:drawstart', function (e) {
-            if (e.layerType === 'polyline') {
-                map.on('click', verifierFinTrace);
+        // --- INTERCEPTIONS DE LA TOUCHE ENTRÉE ---
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                // Évite de recharger la page par défaut
+                e.preventDefault(); 
+                
+                // 1. Force la validation si une ligne est en cours de tracé
+                const polyHandler = drawControl._toolbars.draw._modes.polyline.handler;
+                if (polyHandler && polyHandler._enabled && polyHandler._markers.length > 0) {
+                    polyHandler.completeShape();
+                }
+                
+                // 2. Force la validation si un marqueur (épingle) attend d'être posé
+                const markerHandler = drawControl._toolbars.draw._modes.marker.handler;
+                if (markerHandler && markerHandler._enabled && markerHandler._marker) {
+                    // Simule le clic au centre de la carte si l'utilisateur n'a pas touché l'écran
+                    const centre = map.getCenter();
+                    map.fire('draw:created', {
+                        layer: L.marker(centre),
+                        layerType: 'marker'
+                    });
+                    markerHandler.disable();
+                }
             }
         });
-
-        map.on('draw:drawstop', function () {
-            map.off('click', verifierFinTrace);
-        });
-
-        function verifierFinTrace(e) {
-            // Si l'utilisateur clique très près ou sur le dernier point, on valide de force
-            const drawHandler = drawControl._toolbars.draw._modes.polyline.handler;
-            if (drawHandler && drawHandler._markers && drawHandler._markers.length > 1) {
-                drawHandler.completeShape();
-            }
-        }
 
         function obtenirDonneesStatut(dateSaisie) {
             const diffJours = Math.floor((new Date() - new Date(dateSaisie)) / (1000 * 60 * 60 * 24));
